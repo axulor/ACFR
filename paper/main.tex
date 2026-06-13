@@ -1,0 +1,326 @@
+% =========================================================================
+% A-CFR paper skeleton (P2.5).  Target: ICLR 2027 main conference.
+% Style: placeholder \documentclass{article}; swap in iclr2027_conference
+% style files when released.  All theorem statements are the paper-level
+% forms from 11_P2 (with corrections from 12/15).  Proofs port from docs
+% 12/15 into the appendix (porting checklist in paper/NOTES.md).
+% TODO markers: %% TODO[...]
+% =========================================================================
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+\newtheorem{assumption}{Assumption}
+\newtheorem{remark}{Remark}
+
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\Zs}{\mathcal{Z}^*}
+\newcommand{\gap}{\mathrm{gap}}
+\newcommand{\dist}{\mathrm{dist}}
+\newcommand{\res}{\mathrm{res}}
+\newcommand{\Bw}{B_w}
+\newcommand{\Psiw}{\Psi_w}
+
+\title{Anchored-Regularization CFR: Last-Iterate Linear Convergence\\
+for Model-Free Deep Counterfactual Regret Minimization}
+\author{Anonymous}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+%% TODO[abstract]: write last. Core claims: (1) first last-iterate
+%% linear-convergence theory for the deep-CFR lineage; (2) deletes the
+%% average-strategy network / reservoir buffers / T-network storage;
+%% (3) every layer of the analysis (inner rate, outer rate, noise floor,
+%% approximation floor) has a closed form hit by experiments within
+%% ~5%; (4) three failure modes predicted by the theory and fixed.
+\end{abstract}
+
+% =========================================================================
+\section{Introduction}
+% Narrative (doc 10/14): the average strategy is the original sin of the
+% deep CFR lineage (DeepCFR -> SD-CFR -> DREAM -> ESCHER -> VR-DeepPDCFR+).
+% SD-CFR argument: the average network is the single largest error source;
+% none of the lineage has last-iterate theory.  We reconnect CFR's
+% counterfactual decomposition (the source of efficiency) with anchored
+% regularized dynamics (the source of last-iterate convergence).
+%% TODO[intro]: memory/error ledger table for the lineage (02 doc, sec 6).
+
+\paragraph{Contributions.}
+\begin{itemize}
+  \item A-CFR: anchored multiplicative update with fixed temperature
+        $\tau$ (never annealed), periodic anchor snapshots, and a
+        $\lambda$-estimator for sampled feedback interpolating
+        DREAM-style unbiased ($\lambda{=}1$) and ESCHER-style
+        zero-IS-variance ($\lambda{=}0$) endpoints.
+  \item Last-iterate \emph{linear} convergence of the current policy to
+        an exact Nash equilibrium (Thm~\ref{thm:outer}); no averaging
+        anywhere in the pipeline.
+  \item Sampled version: $O(\sigma^2/(B\tau^2 t))$ rates and a
+        closed-form noise floor (Thm~\ref{thm:sampled}); neural version:
+        uniform-in-time approximation floor
+        (Prop.~\ref{prop:neural}) with an explicit, controllable
+        schedule--approximation trade-off (Cor.~\ref{cor:etastar}).
+  \item Theory--experiment locking: predicted constants hit within
+        2--5\% (inner rate), $O(\tau)$ anchor bound observed at
+        $\tau^{1.3}$, three failure modes (utility scaling, anchor
+        frequency, distillation-schedule mismatch) predicted, observed,
+        and repaired.
+\end{itemize}
+
+% =========================================================================
+\section{Setting and the A-CFR Algorithm}
+\label{sec:setting}
+% Doc 11 sec 0 verbatim.
+Two-player zero-sum perfect-recall EFG; sequence-form polytopes
+(treeplexes) $\X,\Y$; payoff $u(x,y)=x^\top A y$ with
+$\|A\|_{\mathrm{op}}=L$ and utilities normalized to $\max|u|\le 1$.
+$\Z=\X\times\Y$, $F(z)=(Ay,\,-A^\top x)$ monotone;
+$\Zs$ the (nonempty compact polyhedral) Nash set; exploitability
+$\gap(z)$.
+
+\paragraph{Weighted dilated entropy.}
+$\Psiw(x)=\sum_I w_I\, x_{p(I)} \sum_a x(a|I)\ln x(a|I)$ with weights
+$w_I>0$ (the algorithm's reach-normalization corresponds to
+$w_I=$ opponent$\times$chance reach mass, frozen within an anchor
+phase); $\Bw$ the induced Bregman divergence.
+
+\paragraph{Algorithm.}
+Fixed temperature $\tau$; anchor $\mu_k$; $K$ inner steps of weighted
+mirror descent
+\begin{equation}
+  z^{t+1}=\arg\min_z\ \eta\langle \hat F(z^t),z\rangle
+  +\eta\tau \Bw(z\|\mu_k)+\Bw(z\|z^t),
+  \label{eq:update}
+\end{equation}
+whose per-infoset closed form is the multiplicative update
+\[
+  \sigma^{t+1}(a|I)\ \propto\
+  \sigma^t(a|I)^{\frac{1}{1+\eta\tau}}\,
+  \mu_k(a|I)^{\frac{\eta\tau}{1+\eta\tau}}\,
+  \exp\Big(\tfrac{\eta\,\tilde q^t(I,a)}{1+\eta\tau}\Big),
+\]
+with $\tilde q$ the normalized counterfactual advantage.  After $K$
+steps, $\mu_{k+1}\leftarrow z$.  $\hat F$: exact (full feedback) or the
+$\lambda$-estimator (sampled).  Optional superphase schedule (sampled
+version): every $S$ anchor moves, $\eta\leftarrow\eta/2$,
+$K\leftarrow 2K$ --- annealed down to a freeze point $\eta^*$ in the
+neural version (Cor.~\ref{cor:etastar}).
+%% TODO[algo]: algorithm float with tabular/sampled/neural variants.
+
+% =========================================================================
+\section{Theory}
+\label{sec:theory}
+
+\begin{lemma}[Strong monotonicity and the CFR decomposition]
+\label{lem:decomp}
+(a) $\Psiw$ is $c_w$-strongly convex on the treeplex w.r.t.\
+$\|\cdot\|_2$, $c_w$ explicit in tree depth, branching, and
+$\min_I w_I$.
+(b) $F^{\mu}_\tau(z) := F(z)+\tau(\nabla\Psiw(z)-\nabla\Psiw(\mu))$ is
+$\tau c_w$-strongly monotone.
+(c) The prox step \eqref{eq:update} decomposes exactly into per-infoset
+updates whose local gradients are counterfactual values: CFR's
+decomposition \emph{is} the dilated-geometry localization of mirror
+descent.
+\end{lemma}
+% (a) cite Kroer-Waugh-Kilinc-Karzan-Sandholm 2020; (c) instantiate
+% Farina-Kroer-Sandholm 2019 local decomposition.
+
+\begin{lemma}[Anchor bound]
+\label{lem:anchor}
+For any anchor $\mu\in\mathrm{ri}(\Z)$, the regularized saddle point
+$z^*_\tau(\mu)$ satisfies
+$\gap(z^*_\tau(\mu)) \le 2\tau \max_{z\in\Z}\Bw(z\|\mu) =: 2\tau D_w(\mu)$.
+\end{lemma}
+% Proof: 3 lines, doc 12. Experiment: floor(tau=0.01)=0.0099; empirical
+% exponent tau^{1.3} (better than the bound).
+
+\begin{theorem}[Inner loop: linear convergence, $c$-free rate]
+\label{thm:inner}
+Let $\eta\le \tau c_w^2/(2L_w^2)$. For a fixed anchor $\mu$,
+\[
+  \Bw(z^*_\tau(\mu)\|z^{t+1})\ \le\ \frac{1+\eta\tau/2}{1+\eta\tau}\,
+  \Bw(z^*_\tau(\mu)\|z^{t}),
+\]
+and $(1+\eta\tau)^{-1}$ with the optimistic step.  The strong-convexity
+modulus $c_w$ enters only the step-size condition, \emph{not} the rate.
+\end{theorem}
+% Proof: composite-prox, 5 steps, doc 12.  Experiment B1: measured/
+% theory ratio 0.95-0.98 across 4 (eta,tau) pairs.
+
+\begin{assumption}[Polyhedral error bound]
+\label{ass:eb}
+There exist $\kappa>0$ and a neighborhood of $\Zs$ on which
+$\dist(z,\Zs)\le\kappa\,\res(z)$.
+\end{assumption}
+% Holds for bilinear games on polytopes (Robinson 1981); same assumption
+% as Wei-Lee-Zhang-Luo 2021 for OGDA on EFGs (direct precedent).
+
+\begin{theorem}[Outer loop: last-iterate linear convergence to exact Nash]
+\label{thm:outer}
+(a) With $\varepsilon_k$-inexact anchor moves
+($\Bw(z^*_k\|\mu_{k+1})\le\varepsilon_k$) and
+$\sum_k\sqrt{\varepsilon_k}<\infty$ (automatic for fixed $K$ by
+Thm~\ref{thm:inner}), $\mu_k\to z^*\in\Zs$ and $\gap(\mu_k)\to 0$, with
+$\tau$ fixed.
+(b) Under Assumption~\ref{ass:eb}, there are $\rho_{\mathrm{out}}(\tau,\kappa)<1$
+and $K_0=O(\ln(\cdot)/\ln(1+\eta\tau))$ such that periodic-anchor A-CFR
+with $K\ge K_0$ satisfies
+$\dist(\mu_{k+1},\Zs)\le\rho_{\mathrm{out}}\,\dist(\mu_k,\Zs)$, with the
+Luque form $\rho_{\mathrm{out}}(\tau)=\frac{a\tau}{\sqrt{1+a^2\tau^2}}$.
+\end{theorem}
+% (a) Eckstein 1993 Bregman-PPM + interior preservation; boundary
+% essential-smoothness check = appendix item (doc 15 checklist, 1 open
+% low-risk item).  (b) Luque 1984 + Rockafellar criterion-B inexactness;
+% isolated-K experiment D3: a ~= 37 (Leduc) near-constant across tau;
+% practical rule tau* ~= 1/a.
+%% TODO[thm2b]: full proof = main remaining theory work item.
+
+\begin{proposition}[$\lambda$-estimator bias]
+\label{prop:lambda}
+For fixed $\lambda$, depth $D$, $\|Q-Q^{\sigma}\|_\infty\le\varepsilon_Q$:
+$|\mathbb{E}\,\bar q_\lambda - q^\sigma|\le(1-\lambda^{D})\varepsilon_Q$;
+$\lambda=1$ unbiased, $\lambda=0$ bias $\le\varepsilon_Q$.  Variance
+grows with $\lambda$ via the per-level recursion
+$\mathrm{Var}(h)\le \frac{\lambda^2}{\xi_{\min}}[\mathrm{Var}(h')+R^2]$;
+clipping gives a depth-independent bound.
+\end{proposition}
+
+\begin{theorem}[Sampled inner loop]
+\label{thm:sampled}
+With estimator bias $b$, variance $\le\sigma^2/B$, steps
+$\eta_t=\Theta(1/(\tau t))$:
+$\mathbb{E}\,\Bw(z^*_\tau\|z^t)
+ = O\!\big(\tfrac{\sigma^2}{B\tau^2 t}\big)
+ + O\!\big(\tfrac{b^2}{\tau^2}\big)$;
+constant-step steady state $\propto \eta\sigma^2/(B\tau)+b$; the
+superphase schedule halves the floor per phase, giving
+$\widetilde O(1/t)$ overall and
+$\widetilde O(\sigma^2 D_w^2 L_u^2/\varepsilon^4)$ samples to an
+$\varepsilon$-Nash last iterate.
+\end{theorem}
+
+\begin{proposition}[Neural approximation error is uniform in time]
+\label{prop:neural}
+If each update incurs distillation error $\delta$ (weighted-Bregman
+sense) and the inner contraction factor is $\rho<1$, then
+$\Bw(z^*_\tau\|z^{t+1})\le\rho \Bw(z^*_\tau\|z^t)+C\delta$ implies
+$\limsup_t \Bw \le \frac{C\delta}{1-\rho}=O\big(\frac{\delta}{\eta\tau}\big)$:
+errors are capped by a geometric series, not summed over iterations
+(contrast: DeepCFR-style bounds sum $T$ per-round errors and add the
+average-network error $\varepsilon_{\mathrm{avg}}$).
+\end{proposition}
+
+\begin{corollary}[Neural floor decomposition; anchor every slow variable]
+\label{cor:etastar}
+The neural steady state decomposes into three independently measurable
+and independently repairable terms,
+\[
+  \mathrm{floor}(t)\ \asymp\
+  \max\Big(
+  \underbrace{\tfrac{\eta\,\sigma^2(t)}{B\tau}}_{\text{estimator variance}},\
+  \underbrace{\tfrac{\sigma_w^2(\mathrm{lr})}{\eta\tau}}_{\text{SGD parameter noise}},\
+  \underbrace{\tfrac{C\,\delta_{\mathrm{bias}}}{\eta\tau}}_{\text{fit bias}}
+  \Big),
+\]
+with distinct $\eta$-scalings.
+(i) \emph{Fit bias} is negligible in practice (measured KL residual
+$10^{-4}$--$10^{-7}$).
+(ii) \emph{Estimator variance} inherits the time-varying $Q$-error
+through Prop.~\ref{prop:lambda} ($\varepsilon_Q\!\to\!\varepsilon_Q(t)$):
+untreated bootstrapped $Q$-training drifts as the policy sharpens; the
+fix is anchored $Q$ targets (snapshot at each anchor move) \emph{plus}
+transition replay with fresh-recomputed targets --- either alone fails.
+(iii) \emph{SGD parameter noise} does not shrink as $\eta$ anneals, so
+its floor $\propto \sigma_w^2/(\eta\tau)$ grows under annealing unless
+the learning rate is coupled to the schedule:
+$\mathrm{lr}\propto\eta$ gives $\sigma_w^2\propto\eta^2$ and the floor
+falls $\propto\eta$, in step with the variance floor.
+The resulting schedule anneals $(\eta, K^{-1}, \mathrm{lr})$ jointly ---
+\emph{anchor every slow variable}: the policy anchor (the theory), the
+$Q$ anchor (the game-theoretic face of a target network), and the
+learning-rate anchor.  In the deep-CFR lineage all three error sources
+are implicit and uninstrumented.
+%% Evidence: P3c-C0 per-update instrumentation (bias negligible, qRMSE
+%% drift); P3d-D1 3-seed ablation (Q fixes fail alone, work together);
+%% P3f 400k (lr coupling: neural min 0.0088 < tabular 0.0181; 5x min,
+%% 6-10x final improvement). Residual: mild late creep in 1/4 seeds
+%% (final 2-4x tabular) -- reported honestly, open engineering item.
+\end{corollary}
+
+\paragraph{Assumption register.}
+(A1) EB constants are game-dependent (Kuhn vs Leduc per-iteration rates
+differ $\sim 8\times$).  (A2) adaptive $\lambda$: empirical only; full
+theory for fixed $\lambda$.  (A3) phase-wise frozen weights = bounded
+variable metric.  (A4) theory stated for simultaneous updates
+(Reg-CFR convention).
+
+% =========================================================================
+\section{Experiments}
+\label{sec:experiments}
+% Figure plan (doc 11 sec 7 + P3b/P3c updates); files in ../results/.
+% Fig 1: noise scissors, A-CFR vs CFR+ under sampling noise, 83x/39x
+%        (figP1A2_scissors.png)
+% Fig 2: linear last-iterate over 13 orders of magnitude + K* rule
+%        (figC2_rate_vs_K.png / fig2_linear_rate.png)
+% Fig 3: scaling-law mosaic: inner rate (B1), tau floor (B2),
+%        outer factor vs tau (D1), Luque rho(tau) with a~=37 (D3)
+% Fig 4: lambda spectrum, two-game ordering reversal (figP1B2 + figP1C2)
+% Fig 5: neural bridge: naive-schedule pathology vs matched/frozen fix
+%        (figP3b_B1_schedules.png -> superseded by figP3c_C3_final.png)
+% Fig 6 (new, P3c): floor(eta) U-curve + delta scaling
+%        (figP3c_C1_ucurve.png, figP3c_C0_delta.png)
+%% TODO[experiments]: write subsections after P3c lands; every figure
+%% gets a "predicted vs measured" inset table.
+
+% =========================================================================
+\section{Related Work}
+% Port the positioning table from doc 02 sec 6: DeepCFR/SD-CFR/DREAM/
+% ESCHER/VR-DeepPDCFR+ (average-policy lineage); MMD/Reg-CFR (anchored
+% dynamics, no CFR decomposition / no sampling theory); restarted ExRM+/
+% PDHG (linear rates, normal-form or full feedback); ICML'25 bandit
+% last-iterate eps^-8 (weaker feedback model, honest contrast).
+%% TODO[related]: 1-page table + 0.5 page text.
+
+\section{Conclusion}
+%% TODO[conclusion]
+
+\bibliographystyle{plainnat}
+% \bibliography{refs}
+%% TODO[bib]: build refs.bib (Eckstein93, Luque84, Robinson81, Wei21,
+%% Kroer20, Farina19, Brown19 DeepCFR, Steinberger20 SD-CFR, DREAM,
+%% ESCHER, VR-DeepPDCFR+ AAAI26, MMD Sokota22, Reg-CFR Liu23+, Juditsky
+%% -Nemirovski, Hoda10, Bauschke-Borwein).
+
+\appendix
+\section{Proofs}
+% Porting checklist in paper/NOTES.md.
+\subsection{Proof of Lemma~\ref{lem:anchor}}   % <- doc 12
+\subsection{Proof of Theorem~\ref{thm:inner}}  % <- doc 12 (5 steps)
+\subsection{Proof of Theorem~\ref{thm:outer}a} % <- doc 15 checklist
+\subsection{Proof of Theorem~\ref{thm:outer}b} %% TODO[main remaining]
+\subsection{Proofs of Prop.~\ref{prop:lambda}, Thm~\ref{thm:sampled}} % <- docs 12/15
+\subsection{Proof of Prop.~\ref{prop:neural}, Lemma N$'$ (distillation
+interface), Cor.~\ref{cor:etastar}} % <- docs 12/15 + P3c
+\section{Experimental Details}
+%% TODO[exp-details]: configs from code/run_phase*.py; the definitive
+%% config: normalization + utility scaling + periodic anchor, eta=0.5,
+%% tau=0.1, K=ceil(7/ln(1+eta*tau)); sampled: B=16-32, lambda-estimator,
+%% superphase schedule, xi=0.4.
+
+\end{document}

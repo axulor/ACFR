@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+# editor/workspace settings (machine-specific paths)
+.vscode/
+# large per-update diagnostic dumps (regenerable)
+results/p3c_c0_diag_full.csv
+# LaTeX build artifacts
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.bbl
+paper/*.blg
+paper/*.synctex.gz
+paper/*.pdf

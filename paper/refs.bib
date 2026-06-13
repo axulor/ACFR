@@ -1,0 +1,158 @@
+% A-CFR references. Verify volume/page details before submission
+% (entries drafted from memory; arXiv ids spot-check needed).
+
+% ---------- deep CFR lineage (the average-strategy burden) ----------
+@inproceedings{brown2019deepcfr,
+  title={Deep Counterfactual Regret Minimization},
+  author={Brown, Noam and Lerer, Adam and Gross, Sam and Sandholm, Tuomas},
+  booktitle={ICML},
+  year={2019}
+}
+@inproceedings{steinberger2019sdcfr,
+  title={Single Deep Counterfactual Regret Minimization},
+  author={Steinberger, Eric},
+  note={arXiv:1901.07621},
+  year={2019}
+}
+@inproceedings{steinberger2020dream,
+  title={DREAM: Deep Regret Minimization with Advantage Baselines and Model-free Learning},
+  author={Steinberger, Eric and Lerer, Adam and Brown, Noam},
+  note={arXiv:2006.10410},
+  year={2020}
+}
+@inproceedings{mcaleer2023escher,
+  title={ESCHER: Eschewing Importance Sampling in Games by Computing a History Value Function to Estimate Regret},
+  author={McAleer, Stephen and Farina, Gabriele and Lanctot, Marc and Sandholm, Tuomas},
+  booktitle={ICLR},
+  year={2023}
+}
+@inproceedings{vrdeepdcfr2026,
+  title={Variance-Reduced Deep Predictive Discounted CFR+},
+  author={{AAAI 2026 SOTA; fill exact authors/title from the published version}},
+  booktitle={AAAI},
+  year={2026},
+  note={VR-DeepPDCFR+; lineage SOTA}
+}
+
+% ---------- anchored / regularized dynamics, last iterate ----------
+@inproceedings{sokota2023mmd,
+  title={A Unified Approach to Reinforcement Learning, Quantal Response Equilibria, and Two-Player Zero-Sum Games},
+  author={Sokota, Samuel and D'Orazio, Ryan and Kolter, J. Zico and Loizou, Nicolas and Lanctot, Marc and Mitliagkas, Ioannis and Brown, Noam and Kroer, Christian},
+  booktitle={ICLR},
+  year={2023},
+  note={Magnetic Mirror Descent}
+}
+@article{perolat2021poincare,
+  title={From Poincar{\'e} Recurrence to Convergence in Imperfect Information Games: Finding Equilibrium via Regularization},
+  author={P{\'e}rolat, Julien and Munos, R{\'e}mi and Lespiau, Jean-Baptiste and Omidshafiei, Shayegan and Rowland, Mark and Ortega, Pedro and Burch, Neil and Anthony, Thomas and Balduzzi, David and De Vylder, Bart and Piliouras, Georgios and Lanctot, Marc and Tuyls, Karl},
+  journal={ICML},
+  year={2021}
+}
+@inproceedings{liu2023regcfr,
+  title={The Power of Regularization in Solving Extensive-Form Games},
+  author={Liu, Mingyang and Ozdaglar, Asuman and Yu, Tiancheng and Zhang, Kaiqing},
+  booktitle={ICLR},
+  year={2023},
+  note={Reg-CFR / Reg-DOMD}
+}
+@inproceedings{wei2021linear,
+  title={Linear Last-iterate Convergence in Constrained Saddle-point Optimization},
+  author={Wei, Chen-Yu and Lee, Chung-Wei and Zhang, Mengxiao and Luo, Haipeng},
+  booktitle={ICLR},
+  year={2021},
+  note={OGDA on EFGs under polyhedral error bound -- direct precedent for Thm 2(b)}
+}
+
+% ---------- proximal point / error bounds (outer loop machinery) ----
+@article{rockafellar1976ppm,
+  title={Monotone Operators and the Proximal Point Algorithm},
+  author={Rockafellar, R. Tyrrell},
+  journal={SIAM Journal on Control and Optimization},
+  volume={14}, number={5}, pages={877--898},
+  year={1976}
+}
+@article{luque1984ppm,
+  title={Asymptotic Convergence Analysis of the Proximal Point Algorithm},
+  author={Luque, Fernando Javier},
+  journal={SIAM Journal on Control and Optimization},
+  volume={22}, number={2}, pages={277--293},
+  year={1984}
+}
+@article{eckstein1993bregman,
+  title={Nonlinear Proximal Point Algorithms Using Bregman Functions, with Applications to Convex Programming},
+  author={Eckstein, Jonathan},
+  journal={Mathematics of Operations Research},
+  volume={18}, number={1}, pages={202--226},
+  year={1993}
+}
+@article{robinson1981polyhedral,
+  title={Some Continuity Properties of Polyhedral Multifunctions},
+  author={Robinson, Stephen M.},
+  journal={Mathematical Programming Study},
+  volume={14}, pages={206--214},
+  year={1981}
+}
+@article{bauschke1997legendre,
+  title={Legendre Functions and the Method of Random Bregman Projections},
+  author={Bauschke, Heinz H. and Borwein, Jonathan M.},
+  journal={Journal of Convex Analysis},
+  volume={4}, number={1}, pages={27--67},
+  year={1997}
+}
+
+% ---------- treeplex geometry / CFR foundations -------------------
+@article{hoda2010smoothing,
+  title={Smoothing Techniques for Computing Nash Equilibria of Sequential Games},
+  author={Hoda, Samid and Gilpin, Andrew and Pe{\~n}a, Javier and Sandholm, Tuomas},
+  journal={Mathematics of Operations Research},
+  volume={35}, number={2}, pages={494--512},
+  year={2010}
+}
+@article{kroer2020dilated,
+  title={Faster Algorithms for Extensive-Form Game Solving via Improved Smoothing Functions},
+  author={Kroer, Christian and Waugh, Kevin and K{\i}l{\i}n{\c{c}}-Karzan, Fatma and Sandholm, Tuomas},
+  journal={Mathematical Programming},
+  volume={179}, pages={385--417},
+  year={2020}
+}
+@inproceedings{farina2019dilated,
+  title={Online Convex Optimization for Sequential Decision Processes and Extensive-Form Games},
+  author={Farina, Gabriele and Kroer, Christian and Sandholm, Tuomas},
+  booktitle={AAAI},
+  year={2019}
+}
+@inproceedings{zinkevich2007cfr,
+  title={Regret Minimization in Games with Incomplete Information},
+  author={Zinkevich, Martin and Johanson, Michael and Bowling, Michael and Piccione, Carmelo},
+  booktitle={NeurIPS},
+  year={2007}
+}
+@inproceedings{lanctot2009mccfr,
+  title={Monte Carlo Sampling for Regret Minimization in Extensive Games},
+  author={Lanctot, Marc and Waugh, Kevin and Zinkevich, Martin and Bowling, Michael},
+  booktitle={NeurIPS},
+  year={2009}
+}
+@inproceedings{schmid2019vrmccfr,
+  title={Variance Reduction in Monte Carlo Counterfactual Regret Minimization (VR-MCCFR) for Extensive Form Games Using Baselines},
+  author={Schmid, Martin and Burch, Neil and Lanctot, Marc and Moravcik, Matej and Kadlec, Rudolf and Bowling, Michael},
+  booktitle={AAAI},
+  year={2019}
+}
+
+% ---------- stochastic approximation ------------------------------
+@article{juditsky2011sa,
+  title={Solving Variational Inequalities with Stochastic Mirror-Prox Algorithm},
+  author={Juditsky, Anatoli and Nemirovski, Arkadi and Tauvel, Claire},
+  journal={Stochastic Systems},
+  volume={1}, number={1}, pages={17--58},
+  year={2011}
+}
+
+% ---------- benchmark ----------------------------------------------
+@article{lanctot2019openspiel,
+  title={OpenSpiel: A Framework for Reinforcement Learning in Games},
+  author={Lanctot, Marc and Lockhart, Edward and Lespiau, Jean-Baptiste and Zambaldi, Vinicius and Upadhyay, Satyaki and P{\'e}rolat, Julien and Srinivasan, Sriram and Timbers, Finbarr and Tuyls, Karl and Omidshafiei, Shayegan and others},
+  journal={arXiv:1908.09453},
+  year={2019}
+}
