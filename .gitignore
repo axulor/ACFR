@@ -14,3 +14,11 @@ paper/*.bbl
 paper/*.blg
 paper/*.synctex.gz
 paper/*.pdf
+
+# external baseline repos (DREAM/DeepPDCFR/ESCHER) for comparison
+baselines/
+
+# verbose regenerable run logs (comparison + diagnostics)
+code/comparison/logs_run/
+code/comparison/*.log
+results/*.log

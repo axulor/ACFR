@@ -1,49 +1,50 @@
-# Phase 0 代码：A-CFR 核心 idea 验证
+# A-CFR code — structure
 
-## 运行
+Reorganized 2026-06-13 (Ubuntu phase). Core library is **flat** (so all
+`from games import ...` style imports keep working); everything else is in
+topic subdirs. Run any script with the core dir on the path:
 
+```bash
+export PYTHONPATH=/home/axulor/ACFR/code
 ```
-pip install numpy matplotlib
-cd /d D:\DESKTOP\CFR\CFRforICLR\code
-python run_phase0.py --quick     # 冒烟测试（~1-2 分钟），先跑这个
-python run_phase0.py             # 完整实验（约 20-40 分钟，E5 Leduc 最慢）
-```
 
-输出到 `../results/`（5 张图 + 5 个 CSV）。
+## Environments (conda)
+- **acfr** — our algorithm dev/diagnostics. Python 3.10, numpy, torch 2.11+cu128
+  (CUDA), matplotlib. `conda activate acfr`.
+- **deeppdcfr** — baseline harness + the head-to-head comparison (our code
+  also runs here). Python 3.9, open_spiel 1.4, tensorflow 2.15, torch 2.8,
+  sacred. `conda activate deeppdcfr`. Built from `baselines/DeepPDCFR`.
 
-## 文件
-
-| 文件 | 内容 |
+## Core library (flat, importable)
+| file | contents |
 |---|---|
-| `games.py` | 通用 EFG 树引擎；Kuhn（12 信息集）与 Leduc（含两轮下注、加注 2/4、每轮最多 2 次加注） |
-| `exploitability.py` | 精确 best response（按深度降序解信息集）与 NashConv |
-| `algorithms.py` | CFR、CFR+、**A-CFR**（核心更新式见文件头注释；锚模式 fixed / periodic / ema） |
-| `run_phase0.py` | 自检 + 实验 E1–E5 |
+| `games.py` | EFG tree engine; build_kuhn / build_leduc / build_liars_dice |
+| `exploitability.py` | exact best-response + NashConv |
+| `algorithms.py` | CFR / CFR+ / tabular A-CFR (`run_acfr`) |
+| `sampling.py` | sampled A-CFR (λ-estimator, `run_sacfr`) + OS-MCCFR |
+| `neural_acfr.py` | neural A-CFR (`NeuralACFR`); recipe switches incl. `anchor_ema` |
+| `features.py` | generalizing feature encodings (native games) |
+| `os_adapter.py` | **OpenSpiel → our EFG tree** (`build_openspiel`); algos run unchanged |
 
-## 自检（运行时自动断言）
+## Subdirs
+- `experiments/` — historical phase drivers `run_phase0..4c.py` (research log
+  docs `01..23` in repo root explain each).
+- `diagnostics/` — the torch-2.11 last-iterate dig: `diag_rebound.py`,
+  `diag_ablate.py`, `diag_leduc.py`, `run_leduc_reverify.py`.
+- `comparison/` — **head-to-head vs baselines (current focus)**:
+  - `run_ours.py` — A-CFR (last-iterate) on an OpenSpiel game; logs
+    exploitability (=NashConv/2, OpenSpiel metric) vs episodes.
+  - `run_baseline.py` — runs one DeepPDCFR baseline, parses its
+    exploitability curve to the same CSV format.
+  - `campaign.py` — orchestrates the (method × game × seed) matrix with a
+    concurrency cap; idempotent (skips existing CSVs).
+  - `analyze.py` — overlays curves, seed-averages, summary metrics, figures.
+  - outputs: `logs_ours/`, `logs_baseline/`, `logs_run/`, `figs/`.
 
-Kuhn 信息集数 == 12；CFR 平均策略博弈值 ≈ −1/18；NashConv < 0.05。任一失败会直接报错。
-
-## 实验与预期结果（对应 02 文档的理论预测）
-
-| 实验 | 验证内容 | 成功判据 |
-|---|---|---|
-| E1 (fig1) | last-iterate 总览 | CFR/CFR+ 的 **last** 曲线振荡不收敛；A-CFR 移动锚的 last 曲线持续下降 |
-| E2 (fig2) | **预测(a)** 固定锚线性收敛 | 半对数图上距离衰减为直线（Thm 1） |
-| E3 (fig3) | **预测(a)** gap 底 ~ O(τ) | log-log 图上 floor-τ 斜率 ≈ 1（Lemma 2） |
-| E4 (fig4) | **预测(b)** 移动锚 → 精确 Nash | τ 固定不退火，NashConv(last) 持续下降趋 0（Thm 2）；K 太小可能失稳（理论允许，ε_k 条件） |
-| E5 (fig5) | Leduc 上复现 | 同 E1 趋势在更大博弈上保持 |
-
-## 失败模式应对（02 文档 §5）
-
-- E4 中 K=10 发散而 K=200 收敛属预期（内环精度 ε_k 条件）→ 已实现 `anchor_mode="adaptive"`。
-- Leduc 上未归一化 A-CFR 收敛慢（O1 障碍，首轮已实测）→ 已实现 `normalize=True`（反事实值按信息集对手×机会 reach 归一化，锚相位内冻结）。
-
-## Phase 0b（首轮结果判读后的跟进实验，见 04 文档）
-
-```
-python run_phase0b.py --quick   # 冒烟
-python run_phase0b.py           # 完整（~15-30 分钟，B4 最慢）
-```
-
-B1 收缩率 vs 理论值对照表；B2 τ 底加密到 0.01；B3 自适应锚打 1e-3；B4 Leduc 归一化修复验证。
+## The comparison (goal)
+Head-to-head: **A-CFR last-iterate** vs the DeepPDCFR baselines
+(NFSP, OSDeepCFR, DREAM, VRDeepDCFRPlus, VRDeepPDCFRPlus = AAAI'26 SOTA) and
+ESCHER — same OpenSpiel game, same exploitability metric, x-axis = episodes
+sampled. Baselines converge the **average** strategy (+ average net + 1e6
+reservoir buffer); A-CFR reports the **last** iterate (no average net, 2e4
+buffer). See `baselines/` (gitignored) and repo memory.

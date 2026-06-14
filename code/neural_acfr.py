@@ -66,7 +66,8 @@ class NeuralACFR:
                  width=64, seed=0, device="cpu",
                  replay_targets=False, diag=False,
                  q_anchor=False, q_replay=0, q_batch=512,
-                 encoding="onehot", lr_couple=False):
+                 encoding="onehot", lr_couple=False, anchor_ema=1.0,
+                 feature_fn=None):
         """eta_min / grow_distill: Prop-4 schedule corollary. The neural
         floor is max(noise ~ eta*sigma^2/(B*tau), approx ~ delta/(eta*tau)).
         Decaying eta with FIXED distillation accuracy delta makes the
@@ -86,10 +87,13 @@ class NeuralACFR:
         # table); "features" = generalizing encoding (P4) from games.py
         # meta via features.py -- parameters shared across infosets.
         if encoding == "features":
-            from features import feature_matrices
-            I_np, H_np = feature_matrices(self.iset_ids, self.node_list)
-            self.I_enc = torch.tensor(I_np, device=self.dev)
-            self.H_enc = torch.tensor(H_np, device=self.dev)
+            if feature_fn is not None:      # e.g. OpenSpiel info_state_tensor
+                I_np, H_np = feature_fn(self.iset_ids, self.node_list)
+            else:
+                from features import feature_matrices
+                I_np, H_np = feature_matrices(self.iset_ids, self.node_list)
+            self.I_enc = torch.tensor(I_np, device=self.dev).float()
+            self.H_enc = torch.tensor(H_np, device=self.dev).float()
         else:
             self.I_enc = torch.eye(self.n_iset, device=self.dev)
             self.H_enc = torch.eye(self.n_hist, device=self.dev)
@@ -135,6 +139,13 @@ class NeuralACFR:
         # not fit bias). Coupling lr to eta (lr *= eta_decay on each
         # eta decay) makes noise ~ eta^2 => floor ~ eta keeps falling.
         self.lr_couple = lr_couple
+        # anchor_ema (2026-06-13): soft anchor. At each K-step the anchor
+        # only moves a fraction `anchor_ema` toward the current policy
+        # (1.0 = hard snapshot = original behavior). <1 gives the anchor
+        # inertia -> a stronger restoring force that damps the init-
+        # dependent last-iterate drift seen on torch 2.11 / Leduc. Still
+        # a current-policy construct (NO average-strategy net).
+        self.anchor_ema = anchor_ema
         # adaptive lambda (P4d): lambda* is interior and game-dependent
         # (Leduc 0.5, liars5 0.75 -- variance-compounding vs Q-bias
         # balance). Per-history lam(h) = clip(kappa*EMA|corr|/u_max,
@@ -353,9 +364,18 @@ class NeuralACFR:
                 batch_adv, batch_cnt, in_batch, q_trans = {}, {}, 0, []
             ep_in_phase += 1
             if ep_in_phase >= cur_K:
-                # anchor snapshot (at scale: EMA/copy of the policy NET)
-                self.anchor = {I: s.copy() for I, s in self.sigma.items()}
-                self.q_tab_anchor = self.q_tab.copy()
+                # anchor snapshot (at scale: EMA/copy of the policy NET).
+                # anchor_ema<1 => soft snapshot (anchor lags policy, more
+                # restoring inertia); ==1 => hard snapshot (original).
+                b = self.anchor_ema
+                if b >= 1.0:
+                    self.anchor = {I: s.copy() for I, s in self.sigma.items()}
+                    self.q_tab_anchor = self.q_tab.copy()
+                else:
+                    self.anchor = {I: (1 - b) * self.anchor[I] + b * s
+                                   for I, s in self.sigma.items()}
+                    self.q_tab_anchor = ((1 - b) * self.q_tab_anchor
+                                         + b * self.q_tab)
                 ep_in_phase = 0
                 phases += 1
                 if self.superphase and phases % self.superphase == 0:
