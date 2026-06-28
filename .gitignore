@@ -22,3 +22,6 @@ baselines/
 code/comparison/logs_run/
 code/comparison/*.log
 results/*.log
+
+# regenerable reproduction output
+/results/

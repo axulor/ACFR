@@ -1,7 +1,5 @@
-# Windows 初验环境实测版本（conda env: InforMARL, Python 3.8.20）。
-# Ubuntu 主战场可放宽到更新版本；OpenSpiel 适配层只在 Ubuntu 侧需要。
 numpy>=1.20
-torch>=1.12
 matplotlib>=3.4
-pandas>=1.3            # 仅结果分析用
-# open_spiel>=1.4      # Ubuntu only: pip install open_spiel
+pandas>=1.3            # result analysis
+torch>=1.12           # neural A-CFR (code/neural_acfr.py)
+# open_spiel>=1.4     # only for the OpenSpiel baseline comparison (code/comparison/)
