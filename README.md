@@ -55,7 +55,12 @@ the last iterates of CFR and CFR+ oscillate, and that the gap floor scales as
 The neural method and the OpenSpiel baseline comparison are documented in
 [`code/README.md`](code/README.md).
 
+## Contributions
+
+Yichao Wang originated the core idea and its mathematical formulation, and
+surveyed the current benchmarks and state-of-the-art baselines used for
+evaluation. The method is developed as part of an ongoing collaboration.
+
 ## Author
 
-Maintained by Yichao Wang (https://github.com/axulor). Part of ongoing
-collaborative research toward a machine-learning venue.
+Maintained by Yichao Wang (https://github.com/axulor).
